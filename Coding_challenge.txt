@@ -1,0 +1,201 @@
+
+create database crimedb;
+use crimedb;
+
+CREATE TABLE Crime (
+CrimeID INT PRIMARY KEY,
+IncidentType VARCHAR(255),
+IncidentDate DATE,
+Location VARCHAR(255),
+Description TEXT,
+Status VARCHAR(20)
+);
+
+CREATE TABLE Victim (
+VictimID INT PRIMARY KEY,
+CrimeID INT,
+Name VARCHAR(255),
+ContactInfo VARCHAR(255),
+Injuries VARCHAR(255),
+age INT,
+FOREIGN KEY (CrimeID) REFERENCES Crime(CrimeID)
+);
+
+CREATE TABLE Suspect (
+SuspectID INT PRIMARY KEY,
+CrimeID INT,
+Name VARCHAR(255),
+Description TEXT,
+CriminalHistory TEXT,
+age INT,
+FOREIGN KEY (CrimeID) REFERENCES Crime(CrimeID)
+);
+
+INSERT INTO Crime (CrimeID, IncidentType, IncidentDate, Location, Description, Status)
+VALUES
+(1, 'Robbery', '2023-09-15', '123 Main St, Cityville', 'Armed robbery at a convenience store', 'Open'),
+(2, 'Homicide', '2023-09-20', '456 Elm St, Townsville', 'Investigation into a murder case', 'Under Investigation'),
+(3, 'Theft', '2023-09-10', '789 Oak St, Villagetown', 'Shoplifting incident at a mall', 'Closed');
+
+INSERT INTO Victim (VictimID, CrimeID, Name, ContactInfo, Injuries,age)
+VALUES
+(1, 1, 'John Doe', 'johndoe@example.com', 'Minor injuries',30),
+(2, 2, 'Jane Smith', 'janesmith@example.com', 'Deceased',68),
+(3, 3, 'Alice Johnson', 'alicejohnson@example.com', 'None',11);
+
+INSERT INTO Suspect (SuspectID, CrimeID, Name, Description, CriminalHistory,age)
+VALUES
+(1, 1, 'Robber 1', 'Armed and masked robber', 'Previous robbery convictions',43),
+(2, 2, 'Unknown', 'Investigation ongoing', NULL,27),
+(3, 3, 'Suspect 1', 'Shoplifting suspect', 'Prior shoplifting arrests',35);
+
+-- Solve the below queries:
+1. Select all open incidents.
+select *
+from crime
+where status = 'open';
+/* output
+1	Robbery	2023-09-15	123 Main St, Cityville	Armed robbery at a convenience store	Open
+*/
+2. Find the total number of incidents.
+select incidenttype,count(*)
+from crime
+group by incidenttype;
+/* output
+Homicide	1
+Robbery	1
+Theft	1
+*/
+select count(*)
+from crime; -- 3
+3. List all unique incident types.
+select distinct incidenttype
+from crime;
+/* output
+Robbery
+Homicide
+Theft
+*/
+4. Retrieve incidents that occurred between '2023-09-01' and '2023-09-10'.
+select *
+from crime
+where incidentdate between '2023-09-01' and '2023-09-10';
+/* output
+3	Theft	2023-09-10	789 Oak St, Villagetown	Shoplifting incident at a mall	Closed
+*/
+5. List persons involved in incidents in descending order of age.
+select name,age
+from suspect
+order by age DESC;
+/* output
+Robber 1	43
+Suspect 1	35
+Unknown	27
+*/
+6. Find the average age of persons involved in incidents.
+select AVG(age)
+from suspect; -- 35.000
+7. List incident types and their counts, only for open cases.
+select incidenttype,count(*)
+from crime
+where status='open';
+/* output
+Robbery	1 */
+8. Find persons with names containing 'Doe'.
+select * 
+from victim
+where Name like '%doe%';
+/* output
+1	1	John Doe	johndoe@example.com	Minor injuries	30
+*/
+9. Retrieve the names of persons involved in open cases and closed cases.
+select V.Name AS VictimName, S.Name AS SuspectName,c.status
+from Crime c
+join Victim v ON V.CrimeID = C.CrimeID
+join Suspect s ON S.CrimeID = C.CrimeID
+where C.Status = 'open' or  C.Status= 'closed' ;
+/* output
+John Doe	Robber 1	Open
+Alice Johnson	Suspect 1	Closed
+*/
+10. List incident types where there are persons aged 30 or 35 involved.
+select v.name as victimname,c.incidenttype,v.age
+from Crime c
+join Victim v ON V.CrimeID = C.CrimeID
+where v.age = '30' or v.age = '35'  ;
+/* output
+John Doe	Robbery	30 */
+select s.name as suspectname,c.incidenttype,s.age
+from Crime c
+join Suspect s ON S.CrimeID = C.CrimeID
+where s.age = '30' or s.age = '35'  ;
+/* output
+Suspect 1	Theft	35
+*/
+11. Find persons involved in incidents of the same type as 'Robbery'.
+select V.Name AS VictimName, S.Name AS SuspectName
+from Crime c
+join Victim v ON V.CrimeID = C.CrimeID
+join Suspect s ON S.CrimeID = C.CrimeID
+where C.IncidentType = 'robbery';
+/* output
+John Doe	Robber 1
+*/
+12. List incident types with more than one open case.
+select incidenttype, count(*) as number_of_cases
+from crime
+where status='open'
+group by incidenttype
+having number_of_cases >1; -- nill
+13. List all incidents with suspects whose names also appear as victims in other incidents.
+14. Retrieve all incidents along with victim and suspect details.
+select *
+from Crime
+join Victim ON Crime.CrimeID = Victim.CrimeID
+join Suspect ON Crime.CrimeID = Suspect.CrimeID;
+/* output
+1	Robbery	2023-09-15	123 Main St, Cityville	Armed robbery at a convenience store	Open	1	1	John Doe	johndoe@example.com	Minor injuries	30	1	1	Robber 1	Armed and masked robber	Previous robbery convictions	43
+2	Homicide	2023-09-20	456 Elm St, Townsville	Investigation into a murder case	Under Investigation	2	2	Jane Smith	janesmith@example.com	Deceased	68	2	2	Unknown	Investigation ongoing		27
+3	Theft	2023-09-10	789 Oak St, Villagetown	Shoplifting incident at a mall	Closed	3	3	Alice Johnson	alicejohnson@example.com	None	11	3	3	Suspect 1	Shoplifting suspect	Prior shoplifting arrests	35
+*/
+15. Find incidents where the suspect is older than any victim.
+select V.Name AS VictimName,v.age as victimage, S.Name AS SuspectName,s.age as suspectage,incidenttype
+from Crime c
+join Victim v ON V.CrimeID = C.CrimeID
+join Suspect s ON S.CrimeID = C.CrimeID
+where s.age > v.age ;
+/* output
+John Doe	30	Robber 1	43	Robbery
+Alice Johnson	11	Suspect 1	35	Theft
+*/
+16. Find suspects involved in multiple incidents
+select S.Name AS SuspectName,COUNT(C.CrimeID) AS NumberOfIncidents
+from crime c
+join suspect s ON s.CrimeID = C.CrimeID
+group BY S.Name
+having NumberOfIncidents > 1;
+/* nill */
+17. List incidents with no suspects involved.
+select *
+from Crime c
+join Suspect s ON s.CrimeID = c.CrimeID
+where S.SuspectID IS NULL;
+/* nill */
+18. List all cases where at least one incident is of type 'Homicide' and all other incidents are of type 'Robbery'.
+19. Retrieve a list of all incidents and the associated suspects, showing suspects for each incident, or 'No Suspect' if there are none.
+select c.incidenttype,s.name as suspectname
+from crime c
+join suspect s on s.crimeid=c.crimeid;
+/* output
+Robbery	Robber 1
+Homicide	Unknown
+Theft	Suspect 1
+*/
+20. List all suspects who have been involved in incidents with incident types 'Robbery' or 'Assault'
+select s.name as suspectname,c.incidenttype
+from crime c
+join suspect s on s.crimeid=c.crimeid
+where c.incidenttype='robbery'or c.incidenttype='assault';
+/* output
+Robber 1	Robbery
+*/
